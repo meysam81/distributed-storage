@@ -1,0 +1,4 @@
+package distributed_storage.sample.type;
+// messageCode = 001
+message  Type {
+}

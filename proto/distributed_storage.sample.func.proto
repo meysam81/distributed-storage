@@ -1,0 +1,5 @@
+package distributed_storage.sample.func;
+import "distributed_storage.sample.type.proto";
+// messageCode = 101
+message Call {
+}

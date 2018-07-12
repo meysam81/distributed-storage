@@ -1,0 +1,4 @@
+## Name of the node
+-name distributed_storage-dev@127.0.0.1
+## Cookie for distributed erlang
+-setcookie distributed_storage-cookie
