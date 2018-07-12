@@ -1,6 +1,7 @@
 -module(server).
 -export([start/2,
 		 proc/2]).
+-import(find_elem, [at/2]).
 
 
 
@@ -25,29 +26,30 @@
 
 %% the starting point of this module is start function
 %% we pass the number of keys we want to have in the storage
--start(FromPID, N) when N >= 0 ->
-	Plist = [spawn(server, proc, [K, K + 999] || K <- lists:seq(0, N - 1, 1000)],
-	messageHandler(FromPID, Plist).
+%% N: number of keys in the storage unit
+start(N, PartitionSize) when N >= 0 ->
+	Plist = [spawn(server, proc, [K, K + PartitionSize - 1]) || K <- lists:seq(0, N - 1, PartitionSize)],
+	messageHandler(Plist, PartitionSize).
 
 %% to determine whose going to respond to what key search
--messageHandler(FromPID, Plist) ->
-	receive K ->
-		Process = yechizi(Plist), %% find the process that has the appropriate key-value
+messageHandler(Plist, PartitionSize) ->
+	receive {FromPID, K} ->
+		Process = at((K div PartitionSize) + 1, Plist), %% find the process that has the appropriate key-value
 		Process ! {FromPID, K},
-		messageHandler(FromPID, Plist)
+		messageHandler(Plist, PartitionSize)
 	end.
 
 
 %% upper and lower band of the partitions are passed to this function
 %% which in term starts as a process
--proc(First, Last) ->
-	KVlist = [{K, 1} || K <- lists:seq(First, Last)],
+proc(First, Last) ->
+	KVlist = [{K, random:uniform(20)} || K <- lists:seq(First, Last)],
 	getValue(KVlist).
 
 
 
 %% then we listen to the clients for the search keys
--getValue(KVlist) ->
+getValue(KVlist) ->
 	receive {FromPID, K} ->
 		FromPID ! lists:keyfind(K, 1, KVlist),
 		getValue(KVlist)
