@@ -1,19 +1,21 @@
 -module(client).
 -export([start/3, askForKey/2]).
 
-%% N: number of clients
-start(ServerPID, N, NumberOfKs) ->
-	[spawn(client, askForKey, [ServerPID, NumberOfKs]) || _I <- lists:seq(0, N - 1)].
+start(ServerPID, NumberOfClients, NumberOfKs) ->
+	[spawn(client, askForKey, [ServerPID, NumberOfKs]) || _ <- lists:seq(0, NumberOfClients - 1)],
+	ok.
 
 
 askForKey(ServerPID, NumberOfKs) ->
+	random:seed(erlang:monotonic_time()),
 	MyK = random:uniform(NumberOfKs - 1),
-	ServerPID ! MyK,
+	ServerPID ! {self(), MyK},
+	io:format("~p search ~p~n", [self(), MyK]),
 	receive
-		{K, V} ->
-			io:format("we received value ~p for searching key ~p~n", [V, K]);
+		{FromPID, {K, V}} ->
+			io:format("~p got ~p from ~p~n", [self(), {K, V}, FromPID]);
 		false ->
-			io:format("we couldn't get anything for searching the key ~p~n", [MyK]);
+			io:format("~p got false~n", [self()]);
 		_ ->
-			io:format("ERROR: default case", [])
+			io:format("ERROR: default case from ~p~n", [self()])
 	end.
